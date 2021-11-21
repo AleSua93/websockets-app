@@ -27,6 +27,7 @@ server.on('upgrade', (req, socket) => {
   ].join('\r\n') + '\r\n\r\n');
 
   socket.on('data', buffer => {
+    console.log(buffer);
     const message = parseMessage(buffer);
 
     if (message) {

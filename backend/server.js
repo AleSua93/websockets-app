@@ -1,6 +1,6 @@
 const http = require('http');
 const static = require('node-static');
-const { parseMessage, constructReply, generateAcceptValue } = require('./websocket-helpers');
+const { parseMessage, constructReply, calculateWebSocketAcceptHeader } = require('./websocket-helpers');
 
 const file = new static.Server('../frontend');
 const port = 8000;
@@ -16,10 +16,10 @@ server.on('upgrade', (req, socket) => {
   }
 
   const acceptKey = req.headers['sec-websocket-key'];
-  const hash = generateAcceptValue(acceptKey);
+  const hash = calculateWebSocketAcceptHeader(acceptKey);
 
   socket.write([
-    'HTTP/1.1 101 Web Socket Protocol Handshake',
+    'HTTP/1.1 101 Switching Protocols',
     'Connection: Upgrade',
     'Upgrade: WebSocket',
     `Sec-WebSocket-Accept: ${hash}`,
@@ -27,7 +27,6 @@ server.on('upgrade', (req, socket) => {
   ].join('\r\n') + '\r\n\r\n');
 
   socket.on('data', buffer => {
-    console.log(buffer);
     const message = parseMessage(buffer);
 
     if (message) {

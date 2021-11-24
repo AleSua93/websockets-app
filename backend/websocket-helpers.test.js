@@ -1,5 +1,5 @@
 const { expect } = require('@jest/globals');
-const { parseMessage, constructReply, generateAcceptValue } = require('./websocket-helpers');
+const { parseMessage } = require('./websocket-helpers');
 const { Buffer } = require('buffer');
 
 describe("Helper functions", () => {

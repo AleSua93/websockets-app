@@ -76,11 +76,11 @@ function parseMessage(buffer) {
   return JSON.parse(json);
 }
 
-const generateAcceptValue = (acceptKey) => {
+const calculateWebSocketAcceptHeader = (acceptKey) => {
   return crypto
     .createHash('sha1')
     .update(acceptKey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', 'binary')
     .digest('base64');
 }
 
-module.exports = { parseMessage, constructReply, generateAcceptValue }
+module.exports = { parseMessage, constructReply, calculateWebSocketAcceptHeader }

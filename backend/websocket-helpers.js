@@ -23,57 +23,65 @@ function constructReply(data) {
 }
 
 function parseMessage(buffer) {
-  const firstByte = buffer.readUInt8(0);
-  const isFinalFrame = Boolean((firstByte >>> 7) & 0x1);
-  const [reserved1, reserved2, reserved3] = [
-    Boolean((firstByte >>> 6) & 0x1),
-    Boolean((firstByte >>> 5) & 0x1),
-    Boolean((firstByte >>> 4) & 0x1),
+  //Variable to track bytes read
+  let currentBytesOffset = 0;
+
+  // Read first two bytes
+  const firstBytes = buffer.readUint16BE();
+
+  const isFinalFrame = firstBytes >>> 15 & 0x1;
+  const [rsv1, rsv2, rsv3] = [
+    firstBytes >>> 14 & 0x1,
+    firstBytes >>> 13 & 0x1,
+    firstBytes >>> 12 & 0x1,
   ];
-  const opCode = firstByte & 0xF;
+  const opCode = (firstBytes >>> 8) & 0xF;
 
-  if (opCode === 0x8) return null;
+  if (opCode !== 0x1) return null;
 
-  if (opCode !== 0x1) return;
+  const isMasked = (firstBytes >>> 7) & 0x1;
+  let payloadLength = firstBytes & 0x7F;
 
-  const secondByte = buffer.readUInt8(1);
-  const isMasked = Boolean((secondByte >>> 7) & 0x1);
-  let currentOffset = 2;
-  let payloadLength = secondByte & 0x7F;
+  currentBytesOffset += 2;
+
   if (payloadLength > 125) {
     if (payloadLength === 126) {
-      payloadLength = buffer.readUInt16BE(currentOffset);
-      currentOffset += 2;
+      payloadLength = buffer.readUint16BE(currentBytesOffset);
+      currentBytesOffset += 2;
     } else { // 127
-      const leftPart = buffer.readUInt32BE(currentOffset);
-      const rightPath = buffer.readUInt32BE(currentOffset += 4);
-
-      throw new Error('Large payloads not currently implemented'); 
+      payloadLength = buffer.readUintBE(2, 8);
+      currentBytesOffset += 8;
     }
   }
 
   let maskingKey;
   if (isMasked) {
-    maskingKey = buffer.readUInt32BE(currentOffset);
-    currentOffset += 4;
+    maskingKey = buffer.readUInt32BE(currentBytesOffset);
+    currentBytesOffset += 4;
   }
 
-  const data = Buffer.alloc(payloadLength);
+  const extensionData = 0; // Set this as 0 for now
+  const applicationData = Buffer.alloc(payloadLength);
 
   if (isMasked) {
-    for (let i = 0, j = 0; i < payloadLength; ++i, j = i % 4) {
-      const shift = j == 3 ? 0 : (3 - j) << 3;
-      const mask = (shift == 0 ? maskingKey : (maskingKey >>> shift)) & 0xFF;
-      const source = buffer.readUInt8(currentOffset++); 
-      data.writeUInt8(mask ^ source, i);
+    for (
+      let i = 0, j = 0;
+      i < payloadLength;
+      ++i, j = i % 4
+    ) {
+      const shift = j === 3 ? 0 : (3 - j) << 3;
+      const maskingKeyOctet = (shift === 0 ? maskingKey : (maskingKey >>> shift)) & 0xFF;
+
+      const transformedOctet = buffer.readUInt8(currentBytesOffset);
+      currentBytesOffset++;
+ 
+      applicationData.writeUInt8(maskingKeyOctet ^ transformedOctet, i);
     }
   } else {
-    buffer.copy(data, 0, currentOffset++);
+    buffer.copy(applicationData, 0, currentBytesOffset++);
   }
 
-  const json = data.toString('utf8');
-  
-  return JSON.parse(json);
+  return JSON.parse(applicationData.toString('utf8'));
 }
 
 const calculateWebSocketAcceptHeader = (acceptKey) => {

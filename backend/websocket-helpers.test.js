@@ -3,7 +3,7 @@ const { parseMessage } = require('./websocket-helpers');
 const { Buffer } = require('buffer');
 
 describe("Helper functions", () => {
-  test('Single-frame JSON messages should be parsed and reconstructed correctly', () => {
+  test('Single-frame JSON message with small payload', () => {
     const originalMessage = { message: 'Hello from the client!' };
 
     // This buffer represents a WS frame with the contents { message: 'Hello from the client!' }
@@ -16,9 +16,5 @@ describe("Helper functions", () => {
     const parsedMessage = parseMessage(buf);
 
     expect(parsedMessage).toEqual(originalMessage);
-  })
-
-  test('Multi-frame JSON messages should be parsed and reconstructed correctly', () => {
-    // TODO
   })
 })

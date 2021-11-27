@@ -1,25 +1,19 @@
 const crypto = require('crypto');
 
-function constructReply(data) {
-  // Convert the data to JSON and copy it into a buffer
-  const json = JSON.stringify(data)
-  const jsonByteLength = Buffer.byteLength(json);
-  // Note: we're not supporting > 65535 byte payloads at this stage 
-  const lengthByteCount = jsonByteLength < 126 ? 0 : 2; 
-  const payloadLength = lengthByteCount === 0 ? jsonByteLength : 126; 
-  const buffer = Buffer.alloc(2 + lengthByteCount + jsonByteLength); 
-  // Write out the first byte, using opcode `1` to indicate that the message 
-  // payload contains text data 
-  buffer.writeUInt8(0b10000001, 0); 
-  buffer.writeUInt8(payloadLength, 1); 
-  // Write the length of the JSON payload to the second byte 
-  let payloadOffset = 2; 
-  if (lengthByteCount > 0) { 
-    buffer.writeUInt16BE(jsonByteLength, 2); payloadOffset += lengthByteCount; 
-  } 
-  // Write the JSON data to the data buffer 
-  buffer.write(json, payloadOffset); 
-  return buffer;
+function constructResponse(data) {
+  const payload = JSON.stringify(data);
+  const payloadLength = Buffer.byteLength(payload, 'utf-8');
+
+  // Response length is the payload + two-byte header
+  const responseLength = payloadLength + 2
+  const responseBuffer = Buffer.alloc(responseLength)
+
+  responseBuffer.writeUInt8(0b10000001)
+  responseBuffer.writeUInt8(payloadLength, 1)
+  responseBuffer.write(payload, 2)
+  
+
+  return responseBuffer
 }
 
 function parseMessage(buffer) {
@@ -91,4 +85,4 @@ const calculateWebSocketAcceptHeader = (acceptKey) => {
     .digest('base64');
 }
 
-module.exports = { parseMessage, constructReply, calculateWebSocketAcceptHeader }
+module.exports = { parseMessage, constructResponse, calculateWebSocketAcceptHeader }

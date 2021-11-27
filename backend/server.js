@@ -1,6 +1,6 @@
 const http = require('http');
 const static = require('node-static');
-const { parseMessage, constructReply, calculateWebSocketAcceptHeader } = require('./websocket-helpers');
+const { parseMessage, constructResponse, calculateWebSocketAcceptHeader } = require('./websocket-helpers');
 
 const file = new static.Server('../frontend');
 const port = 8000;
@@ -27,12 +27,14 @@ server.on('upgrade', (req, socket) => {
   ].join('\r\n') + '\r\n\r\n');
 
   socket.on('data', buffer => {
-    const message = parseMessage(buffer);
+    const data = parseMessage(buffer);
 
-    if (message) {
-      console.log(message);
-      socket.write(constructReply({ message: 'Hello from the server!' }));
-    } else if (message === null) {
+    if (data) {
+      console.log(`Message received: ${data.message}`);
+
+      const response = constructResponse({ message: 'Hello from the server!' })
+      socket.write(response);
+    } else if (data === null) {
       console.log('WebSocket connection closed by the client');
     }
   })

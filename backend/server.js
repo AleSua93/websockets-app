@@ -32,7 +32,7 @@ server.on('upgrade', (req, socket) => {
     if (data) {
       console.log(`Message received: ${data.message}`);
 
-      const response = constructResponse({ message: 'Hello from the server!' })
+      const response = constructResponse({ message: data.message })
       socket.write(response);
     } else if (data === null) {
       console.log('WebSocket connection closed by the client');

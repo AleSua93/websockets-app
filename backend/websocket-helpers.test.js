@@ -1,9 +1,10 @@
 const { expect } = require('@jest/globals');
-const { parseMessage } = require('./websocket-helpers');
+const { parseMessage, constructResponse } = require('./websocket-helpers');
+const { shortMessage, mediumMessage, longMessage } = require('./test-mocks');
 const { Buffer } = require('buffer');
 
 describe("Helper functions", () => {
-  test('Single-frame JSON message with small payload', () => {
+  test('Parse a masked message', () => {
     const originalMessage = { message: 'Hello from the client!' };
 
     // This buffer represents a WS frame with the contents { message: 'Hello from the client!' }
@@ -14,6 +15,24 @@ describe("Helper functions", () => {
     ]);
 
     const parsedMessage = parseMessage(buf);
+
+    expect(parsedMessage).toEqual(originalMessage);
+  })
+
+  test('Construct and parse an unmasked message <= 125 bytes long', () => {
+    const originalMessage = { message: shortMessage };
+    const frame = constructResponse(originalMessage);
+    
+    const parsedMessage = parseMessage(frame);
+
+    expect(parsedMessage).toEqual(originalMessage);
+  })
+
+  test('Construct and parse an unmasked message > 125 and <= 65355 bytes long', () => {
+    const originalMessage = { message: mediumMessage };
+    const frame = constructResponse(originalMessage);
+    
+    const parsedMessage = parseMessage(frame);
 
     expect(parsedMessage).toEqual(originalMessage);
   })

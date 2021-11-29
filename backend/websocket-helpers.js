@@ -2,16 +2,41 @@ const crypto = require('crypto');
 
 function constructResponse(data) {
   const payload = JSON.stringify(data);
-  const payloadLength = Buffer.byteLength(payload, 'utf-8');
+  let payloadLength = Buffer.byteLength(payload, 'utf-8');
+  // If our payload is small, we don't need extra bytes to store the length
+  let extraLengthBytes = 0
 
-  // Response length is the payload + two-byte header
-  const responseLength = payloadLength + 2
+  let updatedPayloadLength;
+  if (payloadLength > 125) {
+    if (payloadLength < 65536) {
+      updatedPayloadLength = payloadLength;
+      payloadLength = 126
+      extraLengthBytes = 2
+    } else {
+      updatedPayloadLength = payloadLength;
+      payloadLength = 127
+      extraLengthBytes = 8
+    }
+  }
+
+  // 2 byte header + additional payload length bytes + payload
+  const responseLength =  2 + extraLengthBytes + (updatedPayloadLength ?? payloadLength)
   const responseBuffer = Buffer.alloc(responseLength)
 
-  responseBuffer.writeUInt8(0b10000001)
-  responseBuffer.writeUInt8(payloadLength, 1)
-  responseBuffer.write(payload, 2)
-  
+  //Variable to track bytes written
+  let currentBytesOffset = 0
+
+  responseBuffer.writeUInt8(0b10000001, currentBytesOffset)
+  currentBytesOffset++;
+  responseBuffer.writeUInt8(payloadLength, currentBytesOffset)
+  currentBytesOffset++;
+
+  if (payloadLength === 126) {
+    responseBuffer.writeUInt16BE(updatedPayloadLength, currentBytesOffset)
+    currentBytesOffset += 2
+  }
+
+  responseBuffer.write(payload, currentBytesOffset)
 
   return responseBuffer
 }

@@ -7,7 +7,36 @@
   <script src="./index.js"></script>
   <title>WebSockets Frontend</title>
 </head>
-<body>
-  Hello there!
+<body style="margin: 20px;">
+  <div style="display:flex; margin-bottom: 10px;">
+    <button
+      type="button"
+      onclick="openConnection()"
+      style="margin-right: 10px;"
+    >Open WebSocket connection</button>
+    <span
+      id="connection-result-text"
+      style="visibility: hidden;"
+    ></span>
+  </div>
+
+  <div style="display:flex; margin-bottom: 10px;">
+    <input id="message-input" type="text" style="margin-right: 10px;"/>
+    <button
+      id="send-message-btn"
+      type="button"
+      onclick="sendMessage()"
+      style="margin-right: 10px;"
+    >Send message</button>
+    <span
+    id="connection-unavailable-text"
+    style="color: red; visibility: hidden;"
+  >You must first open the connection</span>
+  </div>
+
+  <div style="display:flex; margin-bottom: 10px;">
+    <span>ECHO:&nbsp;</span>
+    <span id="received-message"></span>
+  </div>
 </body>
 </html>
